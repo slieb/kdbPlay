@@ -6,32 +6,41 @@ trades:([]
     tradePrice:`float$();
     tradeQty:`int$())
 
-tickers : `IBM`MSFT`AAPL`MS`GS`BAC`GOOG`AMZN`CSCO`AMBA`NFLX`HACK`PFE
+/ 15 tickers -- using more starts stressing local swap space
+tickers : `IBM`MSFT`AAPL`MS`GS`BAC`GOOG`AMZN`CSCO`AMBA`NFLX`HACK`FB`YHOO`INTC
+
+/ start the timeseries on Monday, October 3
 startDate : 2016.10.03
 countTickers : count tickers
-tradesPerSecond : 4
-secondsPerDay : `int$6.5 * 60 * 60        / need to cast the result to an integer
+tradesPerSecond : 8
+secondsPerDay : `int$6.5 * 60 * 60        / need to cast the result (23,400) to an integer
 tradesPerDay : tradesPerSecond * secondsPerDay
-tradingDays : 5
+tradingDays : 3
 numberOfTrades : countTickers * tradesPerDay * tradingDays
 
-tradeDate:startDate+numberOfTrades?5
+/ create list of tradeDates
+tradeDate:startDate+numberOfTrades?tradingDays
 
-/ fix tradeTime array - 4 trades per second, but stop at 16:00:00
-tradeTime:"t"$raze (countTickers*tradingDays)#enlist 09:30:00+15*til tradesPerDay
-tradeTime+:numberOfTrades?1000
+/ create time arrays in 125 millisecond intervals (8 trades per second) per symbol per day
+/ using enlist and raze with type TIME to create final column of timestamps
+tradeTime:"t"$raze (countTickers * tradingDays) #enlist 09:30:00:00+125 * til tradesPerDay
+/ randomize milliseconds
+tradeTime+:numberOfTrades?124
 
 ticker:numberOfTrades?tickers
 
 / consider anchoring each tradePrice / symbol combo to make more accurate, up & down within band
 tradePrice:numberOfTrades?100f
 
-/ fix tradeQty and make more rational
-tradeQty:100*numberOfTrades?1000
+/ randomize tradeQty (by lotsize of 100) between 100 and 10,000
+tradeQty:100 + 100 * numberOfTrades ? 100
 
+/ insert into trades table
 `trades insert (tradeDate;tradeTime;ticker;tradePrice;tradeQty)
 
+/ sort by date, time
 trades:`tradeDate`tradeTime xasc trades
 
-/save `:data/trades.csv
-/save `:data/trades
+/ save to binary and csv formats into data subdirectory
+save `:data/trades
+save `:data/trades.csv
