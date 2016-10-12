@@ -1,3 +1,6 @@
+/ sampleQueries - a list of commands and queries to execute against the trades table
+/                 to demonstrate capabilities, functions, etc.
+
 / this loads the binary trades table into the runtime
 trades: get `:data/trades
 
